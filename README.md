@@ -115,3 +115,13 @@ update msg model =
 In the update you have to handle infinite scroll update. It will return an updated model and a command to execute.
 
 You also have to handle your data fetching, and **don't forget to call `stopLoading`** so that you won't have to wait for timeout before being able to load event more data.
+
+## Examples
+
+To run the examples go to the `examples` directory, install dependencies and run `elm-reactor`:
+
+```
+> cd examples/
+> elm package install
+> elm-reactor
+```

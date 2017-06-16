@@ -1,17 +1,17 @@
 {
-    "version": "2.1.1",
-    "summary": "Infinite scroll API",
+    "version": "1.0.0",
+    "summary": "Infinite scroll examples",
     "repository": "https://github.com/FabienHenon/elm-infinite-scroll.git",
     "license": "BSD3",
     "source-directories": [
-        "src"
+        ".",
+        "../src"
     ],
-    "exposed-modules": [
-        "InfiniteScroll"
-    ],
+    "exposed-modules": [],
     "dependencies": {
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
-        "elm-lang/html": "2.0.0 <= v < 3.0.0"
+        "elm-lang/html": "2.0.0 <= v < 3.0.0",
+        "elm-lang/http": "1.0.0 <= v < 2.0.0"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
