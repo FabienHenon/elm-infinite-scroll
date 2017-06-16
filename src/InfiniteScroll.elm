@@ -12,6 +12,7 @@ module InfiniteScroll
         , LoadMoreCmd
         , stopLoading
         , startLoading
+        , isLoading
         )
 
 {-| Infinite scroll allows you to load more content for the user as he scrolls (up or down).
@@ -33,7 +34,7 @@ the infinite scroll can continue asking for more content.
 @docs update
 
 # Scroll
-@docs infiniteScroll, stopLoading, startLoading
+@docs infiniteScroll, stopLoading, startLoading, isLoading
 
 # Types
 @docs Model, Msg
@@ -271,6 +272,15 @@ when new content is required and your `loadMore` command is executed.
 startLoading : Model msg -> Model msg
 startLoading (Model model) =
     Model { model | isLoading = True }
+
+
+{-| Checks if the infinite scroll is currently in a loading state.
+
+Which means it won't ask for more data even if the user scrolls
+-}
+isLoading : Model msg -> Bool
+isLoading (Model { isLoading }) =
+    isLoading
 
 
 {-| Stops loading. You should call this function when you have finished fetching new data. This tells infinite scroll that it
