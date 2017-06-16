@@ -72,7 +72,11 @@ type Direction
 
 {-| Model of the infinite scroll module. You need to create a new one using `init` function.
 -}
-type alias Model msg =
+type Model msg
+    = Model (ModelInternal msg)
+
+
+type alias ModelInternal msg =
     { direction : Direction
     , offset : Int
     , loadMoreFunc : LoadMoreCmd msg
@@ -119,13 +123,14 @@ type Msg
 -}
 init : LoadMoreCmd msg -> Model msg
 init loadMoreFunc =
-    { direction = Bottom
-    , offset = 50
-    , loadMoreFunc = loadMoreFunc
-    , isLoading = False
-    , timeout = 5 * second
-    , lastRequest = 0
-    }
+    Model
+        { direction = Bottom
+        , offset = 50
+        , loadMoreFunc = loadMoreFunc
+        , isLoading = False
+        , timeout = 5 * second
+        , lastRequest = 0
+        }
 
 
 {-| Sets a different timeout value (default is 5 seconds)
@@ -137,8 +142,8 @@ event when previous request did not finished.
         |> timeout 10 * second
 -}
 timeout : Time -> Model msg -> Model msg
-timeout timeout model =
-    { model | timeout = timeout }
+timeout timeout (Model model) =
+    Model { model | timeout = timeout }
 
 
 {-| Sets a different offset (default 50).
@@ -153,8 +158,8 @@ The same applies with a direction set to `Bottom` except it will check for the d
         |> offset 100
 -}
 offset : Int -> Model msg -> Model msg
-offset offset model =
-    { model | offset = offset }
+offset offset (Model model) =
+    Model { model | offset = offset }
 
 
 {-| Sets a different direction (default to `Bottom`).
@@ -166,8 +171,8 @@ will check distance of the scroll bar from the top of the element.
         |> direction Top
 -}
 direction : Direction -> Model msg -> Model msg
-direction direction model =
-    { model | direction = direction }
+direction direction (Model model) =
+    Model { model | direction = direction }
 
 
 
@@ -193,18 +198,18 @@ direction direction model =
                     ( { model | infiniteScroll = infiniteScroll }, cmd )
 -}
 update : (Msg -> msg) -> Msg -> Model msg -> ( Model msg, Cmd msg )
-update mapper msg model =
+update mapper msg (Model model) =
     case msg of
         Scroll pos ->
             if shouldLoadMore model pos then
-                ( startLoading model
+                ( startLoading (Model model)
                 , Cmd.map mapper <| Task.perform CurrTime <| Time.now
                 )
             else
-                ( model, Cmd.map mapper Cmd.none )
+                ( Model model, Cmd.map mapper Cmd.none )
 
         CurrTime time ->
-            ( { model | lastRequest = time }
+            ( Model { model | lastRequest = time }
             , Cmd.batch
                 [ model.loadMoreFunc model.direction
                 , Cmd.map mapper <| Task.perform (Timeout time) <| Process.sleep model.timeout
@@ -213,12 +218,12 @@ update mapper msg model =
 
         Timeout time _ ->
             if time == model.lastRequest then
-                ( stopLoading model, Cmd.map mapper Cmd.none )
+                ( stopLoading (Model model), Cmd.map mapper Cmd.none )
             else
-                ( model, Cmd.map mapper Cmd.none )
+                ( Model model, Cmd.map mapper Cmd.none )
 
 
-shouldLoadMore : Model msg -> ScrollPos -> Bool
+shouldLoadMore : ModelInternal msg -> ScrollPos -> Bool
 shouldLoadMore { direction, offset, isLoading } { scrollTop, contentHeight, containerHeight } =
     if isLoading then
         False
@@ -264,8 +269,8 @@ infiniteScroll mapper =
 when new content is required and your `loadMore` command is executed.
 -}
 startLoading : Model msg -> Model msg
-startLoading model =
-    { model | isLoading = True }
+startLoading (Model model) =
+    Model { model | isLoading = True }
 
 
 {-| Stops loading. You should call this function when you have finished fetching new data. This tells infinite scroll that it
@@ -274,8 +279,8 @@ can continue asking you more content.
 If you forget to call this function or if your data fetching is too long, you will be asked to retrieve more content after timeout has expired.
 -}
 stopLoading : Model msg -> Model msg
-stopLoading model =
-    { model | isLoading = False }
+stopLoading (Model model) =
+    Model { model | isLoading = False }
 
 
 
