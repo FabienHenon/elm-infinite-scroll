@@ -13,6 +13,7 @@ module InfiniteScroll
         , stopLoading
         , startLoading
         , isLoading
+        , cmdFromScrollEvent
         )
 
 {-| Infinite scroll allows you to load more content for the user as he scrolls (up or down).
@@ -35,6 +36,9 @@ the infinite scroll can continue asking for more content.
 
 # Scroll
 @docs infiniteScroll, stopLoading, startLoading, isLoading
+
+# Advanced
+@docs cmdFromScrollEvent
 
 # Types
 @docs Model, Msg
@@ -239,6 +243,45 @@ shouldLoadMore { direction, offset, isLoading } { scrollTop, contentHeight, cont
                         contentHeight - containerHeight
                 in
                     scrollTop >= (excessHeight - offset)
+
+
+{-| **Only use this function if you handle `on "scroll"` event yourself**
+_(for instance if another package is also using the scroll event on the same node)_
+
+The function returns a `Cmd msg` that will perform the model update normally done with `infiniteScroll`.
+You have to pass it a `Json.Decode.Value` directly coming from `on "scroll"` event
+
+    type Msg
+        = InfiniteScrollMsg InfiniteScroll.Msg
+        | OnScroll JsonDecoder.Value
+
+    view : Model -> Html Msg
+    view model =
+        div [ on "scroll" (JsonDecoder.map OnScroll JsonDecoder.value) ] [ -- content -- ]
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            -- ... --
+
+            InfiniteScrollMsg msg_ ->
+                let
+                    ( infScroll, cmd ) =
+                        InfiniteScroll.update InfiniteScrollMsg msg_ model.infScroll
+                in
+                    ( { model | infScroll = infScroll }, cmd )
+
+            OnScroll value ->
+                ( model, InfiniteScroll.cmdFromScrollEvent InfiniteScrollMsg value )
+-}
+cmdFromScrollEvent : (Msg -> msg) -> JD.Value -> Cmd msg
+cmdFromScrollEvent mapper value =
+    case JD.decodeValue (JD.map Scroll decodeScrollPos) value of
+        Ok msg ->
+            Task.perform mapper <| Task.succeed msg
+
+        Err _ ->
+            Cmd.none
 
 
 
