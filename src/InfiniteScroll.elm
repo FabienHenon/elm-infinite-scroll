@@ -7,6 +7,7 @@ module InfiniteScroll
         , timeout
         , offset
         , direction
+        , loadMoreCmd
         , Direction(..)
         , update
         , LoadMoreCmd
@@ -29,7 +30,7 @@ the infinite scroll can continue asking for more content.
 @docs LoadMoreCmd, Direction
 
 # Initialization
-@docs init, timeout, offset, direction
+@docs init, timeout, offset, direction, loadMoreCmd
 
 # Update
 @docs update
@@ -178,6 +179,23 @@ will check distance of the scroll bar from the top of the element.
 direction : Direction -> Model msg -> Model msg
 direction direction (Model model) =
     Model { model | direction = direction }
+
+
+{-| Sets a different command to load content.
+
+It is useful if you need to change your request between two commands. You probably use it when your request is received.
+
+    newRequest page =
+        Task.perform OnLoadMore <| Task.succeed page
+
+    { model | infiniteScroll =
+        model.infiniteScroll
+            |> loadMoreCmd (newRequest model.page)
+    }
+-}
+loadMoreCmd : LoadMoreCmd msg -> Model msg -> Model msg
+loadMoreCmd loadMoreFunc (Model model) =
+    Model { model | loadMoreFunc = loadMoreFunc }
 
 
 
