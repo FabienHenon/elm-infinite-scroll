@@ -4,7 +4,7 @@
 elm package install FabienHenon/elm-infinite-scroll
 ```
 
-Infinite scroll allows you to load more content for the user as he scrolls (up or down).
+Infinite scroll allows you to load more content on demand for the user while scrolling.
 
 The infinite scroll must be bound to an `Html` element and will execute your own `Cmd` when the user
 scrolled to the bottom (or top) of the element.
