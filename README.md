@@ -80,7 +80,7 @@ loadMore dir =
 ```
 
 ### Update
-Finally, all we need to do is to implement the udpdate function.
+Finally, all we need to do is to implement the update function.
 
 ```elm
 update : Msg -> Model -> ( Model, Cmd Msg )
