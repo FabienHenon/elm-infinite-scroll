@@ -47,7 +47,7 @@ the infinite scroll can continue asking for more content.
 
 import Html
 import Html.Attributes exposing (..)
-import Html.Events exposing (on)
+import Html.Events exposing (onWithOptions)
 import Json.Decode as JD
 import Process
 import Task
@@ -324,7 +324,7 @@ cmdFromScrollEvent mapper value =
 -}
 infiniteScroll : (Msg -> msg) -> Html.Attribute msg
 infiniteScroll mapper =
-    Html.Attributes.map mapper <| on "scroll" (JD.map Scroll decodeScrollPos)
+    Html.Attributes.map mapper <| onWithOptions "scroll" { preventDefault = False, stopPropagation = True } (JD.map Scroll decodeScrollPos)
 
 
 {-| Starts loading more data. You should never have to use this function has it is automatically called
