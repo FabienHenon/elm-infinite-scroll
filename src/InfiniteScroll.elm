@@ -15,6 +15,7 @@ module InfiniteScroll
         , startLoading
         , isLoading
         , cmdFromScrollEvent
+        , onScrollUpdate
         )
 
 {-| Infinite scroll allows you to load more content for the user as he scrolls (up or down).
@@ -39,7 +40,7 @@ the infinite scroll can continue asking for more content.
 @docs infiniteScroll, stopLoading, startLoading, isLoading
 
 # Advanced
-@docs cmdFromScrollEvent
+@docs cmdFromScrollEvent, onScrollUpdate
 
 # Types
 @docs Model, Msg
@@ -224,12 +225,7 @@ update : (Msg -> msg) -> Msg -> Model msg -> ( Model msg, Cmd msg )
 update mapper msg (Model model) =
     case msg of
         Scroll pos ->
-            if shouldLoadMore model pos then
-                ( startLoading (Model model)
-                , Cmd.map mapper <| Task.perform CurrTime <| Time.now
-                )
-            else
-                ( Model model, Cmd.map mapper Cmd.none )
+            scrollUpdate mapper pos (Model model)
 
         CurrTime time ->
             ( Model { model | lastRequest = time }
@@ -261,6 +257,29 @@ shouldLoadMore { direction, offset, isLoading } { scrollTop, contentHeight, cont
                         contentHeight - containerHeight
                 in
                     scrollTop >= (excessHeight - offset)
+
+
+scrollUpdate : (Msg -> msg) -> ScrollPos -> Model msg -> ( Model msg, Cmd msg )
+scrollUpdate mapper pos (Model model) =
+    if shouldLoadMore model pos then
+        ( startLoading (Model model)
+        , Cmd.map mapper <| Task.perform CurrTime <| Time.now
+        )
+    else
+        ( Model model, Cmd.map mapper Cmd.none )
+
+
+{-| Like `cmdFromScrollEvent` except it returns the updated `Model` and the `Cmd` to send instead of only a simple `Cmd`
+that will be executed after
+-}
+onScrollUpdate : (Msg -> msg) -> JD.Value -> Model msg -> ( Model msg, Cmd msg )
+onScrollUpdate mapper value (Model model) =
+    case JD.decodeValue decodeScrollPos value of
+        Ok pos ->
+            scrollUpdate mapper pos (Model model)
+
+        Err _ ->
+            ( Model model, Cmd.map mapper Cmd.none )
 
 
 {-| **Only use this function if you handle `on "scroll"` event yourself**
