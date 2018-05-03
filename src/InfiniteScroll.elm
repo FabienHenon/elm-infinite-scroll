@@ -18,7 +18,7 @@ module InfiniteScroll
         , onScrollUpdate
         )
 
-{-| Infinite scroll allows you to load more content for the user as he scrolls (up or down).
+{-| Infinite scroll allows you to load more content for the user as they scroll (up or down).
 
 The infinite scroll must be bound to an `Html` element and will execute your own `Cmd` when the user
 scrolled to the bottom (or top) of the element.
