@@ -1,22 +1,11 @@
-module InfiniteScroll
-    exposing
-        ( infiniteScroll
-        , Model
-        , Msg
-        , init
-        , timeout
-        , offset
-        , direction
-        , loadMoreCmd
-        , Direction(..)
-        , update
-        , LoadMoreCmd
-        , stopLoading
-        , startLoading
-        , isLoading
-        , cmdFromScrollEvent
-        , onScrollUpdate
-        )
+module InfiniteScroll exposing
+    ( LoadMoreCmd, Direction(..)
+    , init, timeout, offset, direction, loadMoreCmd
+    , update
+    , infiniteScroll, stopLoading, startLoading, isLoading
+    , cmdFromScrollEvent, onScrollUpdate
+    , Model, Msg
+    )
 
 {-| Infinite scroll allows you to load more content for the user as they scroll (up or down).
 
@@ -27,32 +16,45 @@ The `Cmd` can be anything you want from local data fetching or complex requests 
 All it has to do is to return a `Cmd msg` and call `stopLoading` once fetching is finished so that
 the infinite scroll can continue asking for more content.
 
+
 # Definitions
+
 @docs LoadMoreCmd, Direction
 
+
 # Initialization
+
 @docs init, timeout, offset, direction, loadMoreCmd
 
+
 # Update
+
 @docs update
 
+
 # Scroll
+
 @docs infiniteScroll, stopLoading, startLoading, isLoading
 
+
 # Advanced
+
 @docs cmdFromScrollEvent, onScrollUpdate
 
+
 # Types
+
 @docs Model, Msg
+
 -}
 
 import Html
 import Html.Attributes exposing (..)
-import Html.Events exposing (onWithOptions)
+import Html.Events exposing (stopPropagationOn)
 import Json.Decode as JD
 import Process
 import Task
-import Time exposing (Time, second)
+import Time exposing (Posix)
 
 
 {-| Definition of the function you must provide to the API. This function will be called
@@ -63,14 +65,17 @@ as soon as new content is required
         Task.perform OnLoadMore <| Task.succeed dir
 
     InfiniteScroll.init loadMore
+
 -}
 type alias LoadMoreCmd msg =
     Direction -> Cmd msg
 
 
 {-| Scroll direction.
-- `Top` means new content will be asked when the user scrolls to the top of the element
-- `Bottom` means new content will be asked when the user scrolls to the bottom of the element
+
+  - `Top` means new content will be asked when the user scrolls to the top of the element
+  - `Bottom` means new content will be asked when the user scrolls to the bottom of the element
+
 -}
 type Direction
     = Top
@@ -88,8 +93,8 @@ type alias ModelInternal msg =
     , offset : Int
     , loadMoreFunc : LoadMoreCmd msg
     , isLoading : Bool
-    , timeout : Time
-    , lastRequest : Time
+    , timeout : Float
+    , lastRequest : Posix
     }
 
 
@@ -104,8 +109,8 @@ type alias ScrollPos =
 -}
 type Msg
     = Scroll ScrollPos
-    | CurrTime Time
-    | Timeout Time ()
+    | CurrTime Posix
+    | Timeout Posix ()
 
 
 
@@ -127,6 +132,7 @@ type Msg
     initModel : Model
     initModel =
         { infiniteScroll = InfiniteScroll.init loadMore }
+
 -}
 init : LoadMoreCmd msg -> Model msg
 init loadMoreFunc =
@@ -135,8 +141,8 @@ init loadMoreFunc =
         , offset = 50
         , loadMoreFunc = loadMoreFunc
         , isLoading = False
-        , timeout = 5 * second
-        , lastRequest = 0
+        , timeout = 5 * 1000
+        , lastRequest = Time.millisToPosix 0
         }
 
 
@@ -146,11 +152,12 @@ When timeout is exceeded `stopLoading` will be automatically called so that infi
 event when previous request did not finished.
 
     init loadMore
-        |> timeout 10 * second
+        |> timeout (10 * 1000)
+
 -}
-timeout : Time -> Model msg -> Model msg
-timeout timeout (Model model) =
-    Model { model | timeout = timeout }
+timeout : Float -> Model msg -> Model msg
+timeout newTimeout (Model model) =
+    Model { model | timeout = newTimeout }
 
 
 {-| Sets a different offset (default 50).
@@ -163,10 +170,11 @@ The same applies with a direction set to `Bottom` except it will check for the d
 
     init loadMore
         |> offset 100
+
 -}
 offset : Int -> Model msg -> Model msg
-offset offset (Model model) =
-    Model { model | offset = offset }
+offset newOffset (Model model) =
+    Model { model | offset = newOffset }
 
 
 {-| Sets a different direction (default to `Bottom`).
@@ -176,10 +184,11 @@ will check distance of the scroll bar from the top of the element.
 
     init loadMore
         |> direction Top
+
 -}
 direction : Direction -> Model msg -> Model msg
-direction direction (Model model) =
-    Model { model | direction = direction }
+direction newDirection (Model model) =
+    Model { model | direction = newDirection }
 
 
 {-| Sets a different command to load content.
@@ -193,6 +202,7 @@ It is useful if you need to change your request between two commands. You probab
         model.infiniteScroll
             |> loadMoreCmd (newRequest model.page)
     }
+
 -}
 loadMoreCmd : LoadMoreCmd msg -> Model msg -> Model msg
 loadMoreCmd loadMoreFunc (Model model) =
@@ -205,8 +215,8 @@ loadMoreCmd loadMoreFunc (Model model) =
 
 {-| The update function must be called in your own update function. It will return an updated `Model` and commands to execute.
 
-    type Msg =
-        InfiniteScrollMsg InfiniteScroll.Msg
+    type Msg
+        = InfiniteScrollMsg InfiniteScroll.Msg
 
     type alias Model =
         { infiniteScroll : InfiniteScroll.Model Msg }
@@ -219,7 +229,8 @@ loadMoreCmd loadMoreFunc (Model model) =
                     ( infiniteScroll, cmd ) =
                         InfiniteScroll.update InfiniteScrollMsg msg_ model.infiniteScroll
                 in
-                    ( { model | infiniteScroll = infiniteScroll }, cmd )
+                ( { model | infiniteScroll = infiniteScroll }, cmd )
+
 -}
 update : (Msg -> msg) -> Msg -> Model msg -> ( Model msg, Cmd msg )
 update mapper msg (Model model) =
@@ -238,25 +249,27 @@ update mapper msg (Model model) =
         Timeout time _ ->
             if time == model.lastRequest then
                 ( stopLoading (Model model), Cmd.map mapper Cmd.none )
+
             else
                 ( Model model, Cmd.map mapper Cmd.none )
 
 
 shouldLoadMore : ModelInternal msg -> ScrollPos -> Bool
-shouldLoadMore { direction, offset, isLoading } { scrollTop, contentHeight, containerHeight } =
-    if isLoading then
+shouldLoadMore model { scrollTop, contentHeight, containerHeight } =
+    if model.isLoading then
         False
+
     else
-        case direction of
+        case model.direction of
             Top ->
-                scrollTop <= offset
+                scrollTop <= model.offset
 
             Bottom ->
                 let
                     excessHeight =
                         contentHeight - containerHeight
                 in
-                    scrollTop >= (excessHeight - offset)
+                scrollTop >= (excessHeight - model.offset)
 
 
 scrollUpdate : (Msg -> msg) -> ScrollPos -> Model msg -> ( Model msg, Cmd msg )
@@ -265,6 +278,7 @@ scrollUpdate mapper pos (Model model) =
         ( startLoading (Model model)
         , Cmd.map mapper <| Task.perform CurrTime <| Time.now
         )
+
     else
         ( Model model, Cmd.map mapper Cmd.none )
 
@@ -310,6 +324,7 @@ You have to pass it a `Json.Decode.Value` directly coming from `on "scroll"` eve
 
             OnScroll value ->
                 ( model, InfiniteScroll.cmdFromScrollEvent InfiniteScrollMsg value )
+
 -}
 cmdFromScrollEvent : (Msg -> msg) -> JD.Value -> Cmd msg
 cmdFromScrollEvent mapper value =
@@ -340,10 +355,11 @@ cmdFromScrollEvent mapper value =
         in
             div [ infiniteScroll InfiniteScrollMsg, Attributes.style styles ]
                 [ -- Here will be my long list -- ]
+
 -}
 infiniteScroll : (Msg -> msg) -> Html.Attribute msg
 infiniteScroll mapper =
-    Html.Attributes.map mapper <| onWithOptions "scroll" { preventDefault = False, stopPropagation = True } (JD.map Scroll decodeScrollPos)
+    Html.Attributes.map mapper <| stopPropagationOn "scroll" (JD.map (\pos -> ( Scroll pos, True )) decodeScrollPos)
 
 
 {-| Starts loading more data. You should never have to use this function has it is automatically called
@@ -357,16 +373,18 @@ startLoading (Model model) =
 {-| Checks if the infinite scroll is currently in a loading state.
 
 Which means it won't ask for more data even if the user scrolls
+
 -}
 isLoading : Model msg -> Bool
-isLoading (Model { isLoading }) =
-    isLoading
+isLoading (Model model) =
+    model.isLoading
 
 
 {-| Stops loading. You should call this function when you have finished fetching new data. This tells infinite scroll that it
 can continue asking you more content.
 
 If you forget to call this function or if your data fetching is too long, you will be asked to retrieve more content after timeout has expired.
+
 -}
 stopLoading : Model msg -> Model msg
 stopLoading (Model model) =
