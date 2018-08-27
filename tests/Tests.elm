@@ -1,8 +1,8 @@
-module Tests exposing (..)
+module Tests exposing (all, init, loadMore)
 
 import Expect
-import Test exposing (..)
 import InfiniteScroll as IS
+import Test exposing (..)
 
 
 loadMore : IS.Direction -> Cmd msg
@@ -25,7 +25,7 @@ all =
                         model =
                             init |> IS.stopLoading
                     in
-                        Expect.equal (IS.startLoading model |> IS.isLoading) True
+                    Expect.equal (IS.startLoading model |> IS.isLoading) True
             ]
         , describe "stopLoading"
             [ test "set isLoading to False" <|
@@ -34,6 +34,6 @@ all =
                         model =
                             init |> IS.startLoading
                     in
-                        Expect.equal (IS.stopLoading model |> IS.isLoading) False
+                    Expect.equal (IS.stopLoading model |> IS.isLoading) False
             ]
         ]
