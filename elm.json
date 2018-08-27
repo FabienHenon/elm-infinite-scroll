@@ -3,7 +3,7 @@
     "name": "FabienHenon/elm-infinite-scroll",
     "summary": "Infinite scroll API",
     "license": "BSD-3-Clause",
-    "version": "2.4.1",
+    "version": "3.0.0",
     "exposed-modules": [
         "InfiniteScroll"
     ],
