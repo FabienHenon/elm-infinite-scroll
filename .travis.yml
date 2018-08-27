@@ -17,7 +17,7 @@ before_install:
 install:
   - wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz"
   - tar xzf binaries-for-linux.tar.gz
-  - mv elm /usr/local/bin/
+  - sudo mv elm /usr/local/bin/
   - node --version
   - npm --version
   - npm install -g elm-test@0.19.0-beta4
