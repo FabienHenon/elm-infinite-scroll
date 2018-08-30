@@ -1,7 +1,7 @@
 # elm-infinite-scroll [![Build Status](https://travis-ci.org/FabienHenon/elm-infinite-scroll.svg?branch=master)](https://travis-ci.org/FabienHenon/elm-infinite-scroll)
 
 ```
-elm package install FabienHenon/elm-infinite-scroll
+elm install FabienHenon/elm-infinite-scroll
 ```
 
 Infinite scroll allows you to load more content on demand for the user while scrolling.
