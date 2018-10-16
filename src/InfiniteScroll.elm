@@ -99,7 +99,7 @@ type alias ModelInternal msg =
 
 
 type alias ScrollPos =
-    { scrollTop : Int
+    { scrollTop : Float
     , contentHeight : Int
     , containerHeight : Int
     }
@@ -262,14 +262,14 @@ shouldLoadMore model { scrollTop, contentHeight, containerHeight } =
     else
         case model.direction of
             Top ->
-                scrollTop <= model.offset
+                scrollTop <= toFloat model.offset
 
             Bottom ->
                 let
                     excessHeight =
                         contentHeight - containerHeight
                 in
-                scrollTop >= (excessHeight - model.offset)
+                scrollTop >= toFloat (excessHeight - model.offset)
 
 
 scrollUpdate : (Msg -> msg) -> ScrollPos -> Model msg -> ( Model msg, Cmd msg )
@@ -398,14 +398,9 @@ stopLoading (Model model) =
 decodeScrollPos : JD.Decoder ScrollPos
 decodeScrollPos =
     JD.map3 ScrollPos
-        (JD.at [ "target", "scrollTop" ] JD.int)
+        (JD.at [ "target", "scrollTop" ] JD.float)
         (JD.at [ "target", "scrollHeight" ] JD.int)
         (JD.map2 Basics.max offsetHeight clientHeight)
-
-
-scrollHeight : JD.Decoder Int
-scrollHeight =
-    JD.at [ "target", "scrollHeight" ] JD.int
 
 
 offsetHeight : JD.Decoder Int
