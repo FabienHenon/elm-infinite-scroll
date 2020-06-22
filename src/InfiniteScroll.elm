@@ -299,6 +299,9 @@ onScrollUpdate mapper value (Model model) =
 {-| **Only use this function if you handle `on "scroll"` event yourself**
 _(for instance if another package is also using the scroll event on the same node)_
 
+_If you wish to use the `document` scroll, you should create a port to catch the document scroll and
+send it to this function via the subscriptions_
+
 The function returns a `Cmd msg` that will perform the model update normally done with `infiniteScroll`.
 You have to pass it a `Json.Decode.Value` directly coming from `on "scroll"` event
 
@@ -398,16 +401,16 @@ stopLoading (Model model) =
 decodeScrollPos : JD.Decoder ScrollPos
 decodeScrollPos =
     JD.map3 ScrollPos
-        (JD.at [ "target", "scrollTop" ] JD.float)
-        (JD.at [ "target", "scrollHeight" ] JD.int)
+        (JD.oneOf [ JD.at [ "target", "scrollTop" ] JD.float, JD.at [ "target", "scrollingElement", "scrollTop" ] JD.float ])
+        (JD.oneOf [ JD.at [ "target", "scrollHeight" ] JD.int, JD.at [ "target", "scrollingElement", "scrollHeight" ] JD.int ])
         (JD.map2 Basics.max offsetHeight clientHeight)
 
 
 offsetHeight : JD.Decoder Int
 offsetHeight =
-    JD.at [ "target", "offsetHeight" ] JD.int
+    JD.oneOf [ JD.at [ "target", "offsetHeight" ] JD.int, JD.at [ "target", "scrollingElement", "offsetHeight" ] JD.int ]
 
 
 clientHeight : JD.Decoder Int
 clientHeight =
-    JD.at [ "target", "clientHeight" ] JD.int
+    JD.oneOf [ JD.at [ "target", "clientHeight" ] JD.int, JD.at [ "target", "scrollingElement", "clientHeight" ] JD.int ]
